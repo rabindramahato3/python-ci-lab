@@ -7,7 +7,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-
 # 2. JOBS: Define one job
 jobs:
   build-and-test:
@@ -18,25 +17,35 @@ jobs:
     # 3. STEPS: Define the sequence of tasks
     steps:
     - name: Checkout Repository Code
-      # Use an official Action to download the code onto the runner
+      # Downloads the code onto the runner
       uses: actions/checkout@v4
 
     - name: Set up Python
-      # Use an official Action to install Python
+      # Installs Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11' # Specify the version of Python
+        python-version: '3.11' # Specify the desired Python version
+        # Recommended: Cache pip dependencies for faster subsequent runs
+        cache: 'pip' 
         
     - name: Install Dependencies
-      # Run a shell command (using 'pip' to install from requirements.txt)
+      # Install project dependencies, including 'pytest' and 'flake8' 
+      # (If they are in requirements.txt or equivalent)
       run: pip install -r requirements.txt
-
-    - name: Run Pytest
-      # Run the testing framework command
-      run: pytest
+      
+    - name: Install Pytest and Flake8 (If not in requirements.txt)
+      # Best practice: If not using a requirements file, install test/lint tools here.
+      # We are installing flake8 here to ensure it is available for the next step.
+      run: pip install pytest flake8 
 
     - name: Lint with Flake8
-      # Run a code quality/linter check
+      # Run the code quality check using the installed flake8 tool.
+      # The '--exit-zero' flag is useful if you want the step to pass 
+      # even with warnings, but it's usually removed in CI to force failure on errors.
+      # We removed the 'pip install flake8' line from this step.
       run: |
-        pip install flake8
-        flake8 . --count --select=E9,F63,F7,F82 --show-source –-statistics
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Run Pytest
+      # Execute the tests after dependencies and linting have passed.
+      run: pytest
